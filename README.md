@@ -65,3 +65,6 @@ If you need any help, feel free to email me
 
 
 This is my first Docker Image, and I had help from friends building it; so I can't promise i'll be helpful.
+
+### Thanks to
+- [Tim](https://github.com/tscs37)
