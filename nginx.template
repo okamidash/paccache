@@ -1,0 +1,78 @@
+worker_processes  2;
+user root;
+daemon off;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    access_log  /dev/stdout;
+    error_log   stderr;
+    sendfile        on;
+    client_max_body_size 1000M;
+    keepalive_timeout  65;
+
+    types_hash_max_size 4096;
+    server_names_hash_bucket_size 128;
+
+
+    resolver ${DNS_SERVER} ipv6=off;
+
+    # Pacman Cache
+    server
+    {
+        listen      8080;
+        server_name ${SERVER_NAME};
+        root        /cache;
+        autoindex   on;
+        autoindex_exact_size on;
+        # Requests for package db, signature files and files db should redirect upstream without caching
+        location ~ \.(db|sig|files)$ {
+            proxy_pass http://mirrors$request_uri;
+        }
+
+        # Requests for actual packages should be served directly from cache if available.
+        #   If not available, retrieve and save the package from an upstream mirror.
+        location ~ \.tar\.xz$ {
+            try_files $uri @pkg_mirror;
+        }
+
+        # Retrieve package from upstream mirrors and cache for future requests
+        location @pkg_mirror {
+            proxy_pass          http://mirrors$request_uri;
+            proxy_store    /cache$request_uri;
+        }
+    }
+
+    # Upstream Arch Linux Mirrors
+    # - Configure as many backend mirrors as you want in the blocks below
+    # - Servers are used in a round-robin fashion by nginx
+    # - Add "backup" if you want to only use the mirror upon failure of the other mirrors
+    # - Use separate mirror server blocks to be able to use mirrors that have different paths to the package repos
+    upstream mirrors {
+        server 127.0.0.1:8001;
+        server 127.0.0.1:8002 backup;
+    }
+
+    # Arch Mirror 1
+    server
+    {
+        listen      127.0.0.1:8001;
+        location / {
+            proxy_pass       ${PRIMARY_MIRROR}/$request_uri;
+        }
+    }
+
+    # Arch Mirror 2
+    server
+    {
+        listen      127.0.0.1:8002;
+        location / {
+            proxy_pass       ${BACKUP_MIRROR}/$request_uri;
+        }
+    }
+
+}
