@@ -12,7 +12,7 @@ Once properly setup, when the Container recieves a request for a package that is
 Any requests for .db or .sig files are *always* sent upstream to the mirror.
 
 ### How do I use it?
-`docker run -d --name --paccache -p 8080:8080 -v /path/to/data/dir:/cache:rw -e okamidash/paccache`
+`docker run -d --name paccache -p 8080:8080 -v /path/to/data/dir:/cache:rw -e PRIMARY_MIRROR=<mirror-url> okamidash/paccache`
 
 #### Environment Variables
 - `DNS_SERVER` DNS Server to use for NGINX. You can change this to any DNS you want. 
